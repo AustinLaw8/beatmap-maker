@@ -1,25 +1,38 @@
-import logo from './logo.svg';
+import React, { useState } from 'react';
+
+import BeatmapDesigner from './BeatmapDesigner';
+
+// import logo from './logo.svg';
 import './App.css';
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    const [fileURL, setURL] = useState(null);
+
+    const changeHandler = (event) => {
+        const file = event?.target.files[0];
+        console.log(file)
+        if (file !== null && file !== undefined)
+        {
+            if (file.type === 'audio/wav')
+            {
+                setURL(URL.createObjectURL(file));
+            }
+            else
+            {
+                alert("Select a wav file pls");
+            }
+        }
+        
+    };
+
+    return(
+        <div>
+            <input type="file" name="file" onChange={changeHandler} />
+            {fileURL !== null ? (
+                <BeatmapDesigner url={fileURL}/>
+            ) : <></> }
+        </div>
+    );
 }
 
 export default App;
