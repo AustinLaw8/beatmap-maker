@@ -1,4 +1,5 @@
 import React from 'react';
+import getSongPosition from './BeatmapDesigner'
 
 function NotePlacer(props) {
     const {
@@ -6,27 +7,15 @@ function NotePlacer(props) {
         notes,
         addNotes,
         songLength,
+        fullWidth,
     } = props;
     
-
-    // Full width, including the scroll part
-    const fullWidth = Math.max(
-        document.body.scrollWidth,
-        document.documentElement.scrollWidth,
-        document.body.offsetWidth,
-        document.documentElement.offsetWidth,
-        document.body.clientWidth,
-        document.documentElement.clientWidth
-    );
-    console.log(fullWidth)
-        
     return(
         <div style={{position:"relative"}}>
             <hr/>
-            <button onClick={ () => addNotes(index) }/>
+             <button onClick={ () => addNotes(index) }/> {/* <img></button> */}
             { notes.map( (note, i) => {
-                const position = String(Math.floor((note / songLength + 16 / fullWidth) * 100000) / 1000) + "%";
-                console.log(position)
+                const position = getSongPosition(note, songLength, fullWidth);
                 return (
                     <button key={i} style={{position: "absolute", top:"0", left:position}}/>
                 );

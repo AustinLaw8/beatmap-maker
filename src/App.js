@@ -4,6 +4,7 @@ import BeatmapDesigner from './BeatmapDesigner';
 
 // import logo from './logo.svg';
 import './App.css';
+import README from './README';
 
 function App() {
     const [fileURL, setURL] = useState(null);
@@ -27,6 +28,7 @@ function App() {
 
     return(
         <div>
+            <README />
             <input type="file" name="file" onChange={changeHandler} />
             {fileURL !== null ? (
                 <BeatmapDesigner url={fileURL}/>
