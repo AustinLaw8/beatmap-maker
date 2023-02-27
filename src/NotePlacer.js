@@ -1,5 +1,8 @@
 import React from 'react';
-import getSongPosition from './BeatmapDesigner'
+import Note from './Note'
+
+import { getSongPosition } from './BeatmapDesigner'
+import { BUTTON_WIDTH } from './App';
 
 function NotePlacer(props) {
     const {
@@ -9,15 +12,23 @@ function NotePlacer(props) {
         songLength,
         fullWidth,
     } = props;
-    
-    return(
-        <div style={{position:"relative"}}>
+
+    const clickListener = (e) => {
+        console.log(e)
+        const x = e.pageX;
+        if (x <= 16) return;
+        const location = (x - BUTTON_WIDTH) / (fullWidth - BUTTON_WIDTH) * songLength;
+        addNotes(index, 'location', location);
+    }
+
+    return (
+        <div onClick={clickListener} style={{position:"relative"}}>
             <hr/>
-             <button onClick={ () => addNotes(index) }/> {/* <img></button> */}
+             <button onClick={ () => addNotes(index, 'index', -1) }/> {/* <img></button> */}
             { notes.map( (note, i) => {
-                const position = getSongPosition(note, songLength, fullWidth);
+                const position = (getSongPosition(note, songLength, fullWidth, false) - BUTTON_WIDTH / 2) + "px";
                 return (
-                    <button key={i} style={{position: "absolute", top:"0", left:position}}/>
+                    <Note key={i} position={position}/>
                 );
             })}
         </div> 

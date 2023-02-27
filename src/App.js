@@ -6,6 +6,8 @@ import BeatmapDesigner from './BeatmapDesigner';
 import './App.css';
 import README from './README';
 
+export const BUTTON_WIDTH = 16;
+
 function App() {
     const [fileURL, setURL] = useState(null);
 
