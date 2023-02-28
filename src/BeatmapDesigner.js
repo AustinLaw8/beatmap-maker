@@ -7,12 +7,19 @@ import { BUTTON_WIDTH } from './App';
 
 export function getSongPosition (position, songLength, fullWidth, px=true)
 {
+    position = Math.abs(position);
     if(px)
         return String(Math.floor(position / songLength * (fullWidth - BUTTON_WIDTH)) + BUTTON_WIDTH) + "px";
     else
         return String(Math.floor(position / songLength * (fullWidth - BUTTON_WIDTH)) + BUTTON_WIDTH);
 
     // return String(Math.floor((position / songLength + 16 / fullWidth) * 100000) / 1000) + "%";
+}
+
+export function getSongTime (position, songLength, fullWidth)
+{
+    position = Math.abs(position);
+    return (position - BUTTON_WIDTH) / (fullWidth - BUTTON_WIDTH) * songLength;
 }
 
 function BeatmapDesigner (props) {
@@ -50,9 +57,28 @@ function BeatmapDesigner (props) {
         setNotes(temp);
     };
 
+    const changeNotes = (index, location, next) => {
+        location = getSongTime(location, songLength, fullWidth);
+        const temp = [...allNotes];
+        // lowkey i dont understand this code it does not work the way i think its supposed to but 
+        switch (next) 
+        {
+            case 0: 
+                temp[index][temp[index].findIndex(e => e === location)] *= -1;
+                break;
+            case 1:
+                temp[index][temp[index].findIndex(e => e === -location)] *= -1;
+                break;
+            default:
+                console.log("err probably occurred in changeNotes, BeatmapDesigner line 57");
+                break;
+        }
+        setNotes(temp);
+    }
+
     const downloadMap = () => {
         const data = allNotes.map( (lane) => {
-            return lane.sort( (a, b) => a - b ).join()
+            return lane.sort( (a, b) => Math.abs(a) - Math.abs(b) ).join()
         }).join('\n');
         const url = window.URL.createObjectURL(
             new Blob([data]),
@@ -85,6 +111,7 @@ function BeatmapDesigner (props) {
 
     const position = getSongPosition(songTime, songLength, fullWidth)
     const measureBars = BPM !== 0 ? new Array (Math.floor(BPS * songLength)).fill(0) : [];
+    console.log(allNotes)
     return (
         <div>
             <div style={ {width:fullWidth+"px"} }>
@@ -95,7 +122,7 @@ function BeatmapDesigner (props) {
                     <Playhead position={position}/>
                     <Waveform url={props.url} time={songTime} setSongTime={setSongTime} setSongLength={setSongLength} fullWidth={fullWidth}/>
                     { allNotes.map( (notes, i) => 
-                    <NotePlacer key={i} index={i} notes={notes} addNotes={addNotes} songLength={songLength} fullWidth={fullWidth}/>
+                    <NotePlacer key={i} index={i} notes={notes} addNotes={addNotes} songLength={songLength} fullWidth={fullWidth} changeNotes={changeNotes}/>
                     )}   
                     <hr/>
                 </div>

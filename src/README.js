@@ -4,7 +4,8 @@ function README () {
             <div>
                 <h2> Currently not implemented </h2>
                 <ul>
-                    <li> Clicking a note cycles from Tap -&gt Flick -&gt Deleted </li>
+                    <li> Deleting notes </li>
+                    <li> Undo / redo stacks </li>
                     <li> Other note types in general (flick and hold) </li>
                 </ul>
             </div>
