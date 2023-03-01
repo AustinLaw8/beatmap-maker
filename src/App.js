@@ -13,7 +13,8 @@ function App() {
 
     const changeHandler = (event) => {
         const file = event?.target.files[0];
-        console.log(file)
+        console.log(file);
+        
         if (file !== null && file !== undefined)
         {
             if (file.type === 'audio/wav')

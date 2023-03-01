@@ -41,57 +41,78 @@ function BeatmapDesigner (props) {
     const [undoStack, setUndoStack] = useState([]);
     const [redoStack, setRedoStack] = useState([]);
     const [isPlaying, setPlaying] = useState(false);
+    const [selected, setSelected] = useState([0,0]);
 
     const BPS = BPM / 60;
     const SPB = 1 / BPS;
 
+    
     const undo = () => {
         if (undoStack.length === 0) return;
-        console.log('udno');
+
         const undoCopy = JSON.parse(JSON.stringify(undoStack));
         const redoCopy = JSON.parse(JSON.stringify(redoStack));
 
         const currentState = JSON.parse(JSON.stringify(allNotes));
         redoCopy.push(currentState);
 
-        const undoneState = undoCopy.pop()
+        const undoneState = undoCopy.pop();
 
-        setUndoStack(undoCopy)
-        setRedoStack(redoCopy)
+        setUndoStack(undoCopy);
+        setRedoStack(redoCopy);
         setNotes(undoneState);
+        setSelected([0,0]);
     }
 
     const redo = () => {
-
         if (redoStack.length === 0) return;
 
         const undoCopy = JSON.parse(JSON.stringify(undoStack));
         const redoCopy = JSON.parse(JSON.stringify(redoStack));
 
         const currentState = JSON.parse(JSON.stringify(allNotes));
-        undoStack.push(currentState);
+        undoCopy.push(currentState);
 
-        const redoneState = redoCopy.pop()
+        const redoneState = redoCopy.pop();
 
-        setUndoStack(undoCopy)
-        setRedoStack(redoCopy)
+        setUndoStack(undoCopy);
+        setRedoStack(redoCopy);
         setNotes(redoneState);
+        setSelected([0,0]);
+    }
+
+    const deleteLastNote = () => {
+        if (selected !== [0,0]) {
+            const [ target, index ] = selected
+            const copy = JSON.parse(JSON.stringify(allNotes));
+            const temp = JSON.parse(JSON.stringify(allNotes));
+            temp[index].splice(temp[index].findIndex(e => e === target),1);
+
+            setUndoStack([...undoStack, copy]);
+            setRedoStack([]);
+            setNotes(temp);
+            setSelected([0,0]);
+        }
     }
 
     const onKeyDown = (e) => {
         switch (e.keyCode)
         {
-            case 32:
+            case 8: // Backspace
+                deleteLastNote();
+                break;
+            case 32: // Space
                 setPlaying(!isPlaying);
                 e.preventDefault();
                 break;
-            case 80:
+            case 80: // P
                 setPlaying(!isPlaying);
                 break;
-            case 89:
+            case 89: // Y
                 if (e.ctrlKey || e.metaKey) redo();
-                break;
-            case 90:
+                if (e.metaKey) e.preventDefault();
+                break; 
+            case 90: // Z
                 if (e.ctrlKey || e.metaKey) undo();
                 break;
             default:
@@ -119,16 +140,16 @@ function BeatmapDesigner (props) {
     
         const copy = JSON.parse(JSON.stringify(allNotes));
         const temp = JSON.parse(JSON.stringify(allNotes));
-        temp[index].push(target)
-        setUndoStack([...undoStack, copy])
-        setRedoStack([])
+        temp[index].push(target);
+        setUndoStack([...undoStack, copy]);
+        setRedoStack([]);
         setNotes(temp);
+        setSelected([target, index]);
     };
 
     const changeNotes = (index, location, next) => {
         location = getSongTime(location, songLength, fullWidth);
-        console.log("searchign for" + location + " to go to " + next)
-        const temp = [...allNotes];
+        const temp = JSON.parse(JSON.stringify(allNotes));
         switch (next) 
         {
             case 0: 
@@ -141,13 +162,18 @@ function BeatmapDesigner (props) {
                 console.log("err probably occurred in changeNotes, BeatmapDesigner line 57");
                 break;
         }
+
+        const copy = JSON.parse(JSON.stringify(allNotes));
+        setUndoStack([...undoStack, copy]);
+        setRedoStack([]);
         setNotes(temp);
+        setSelected([location*-1, index]);
     }
 
     const downloadMap = () => {
-        const data = allNotes.map( (lane) => {
-            return lane.sort( (a, b) => Math.abs(a) - Math.abs(b) ).join()
-        }).join('\n');
+        const data = allNotes.map( (lane) => 
+            lane.sort( (a, b) => Math.abs(a) - Math.abs(b) ).join()
+        ).join('\n');
         const url = window.URL.createObjectURL(
             new Blob([data]),
         );
@@ -165,8 +191,14 @@ function BeatmapDesigner (props) {
     }
 
 
-    const position = getSongPosition(songTime, songLength, fullWidth)
+    const position = getSongPosition(songTime, songLength, fullWidth);
     const measureBars = BPM !== 0 ? new Array (Math.floor(BPS * songLength)).fill(0) : [];
+
+    console.log(allNotes);
+    console.log(undoStack);
+    console.log(redoStack);
+    console.log(selected);
+
     return (
         <div style={{outlineStyle:"hidden"}}tabIndex={-1} onKeyDown={onKeyDown}>
             <div style={{margin:"10px"}}>
