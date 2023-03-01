@@ -218,7 +218,7 @@ function BeatmapDesigner (props) {
                 </div>
             </div>
 
-            <div style={{position:"fixed", marginLeft:BUTTON_WIDTH+10+"px"}}>
+            <div style={{marginLeft:BUTTON_WIDTH+10+"px"}}>
                 <div>
                     <label>Page Width:</label>
                     <input type="number"onChange={(e) => setWidth(e.target.value) }/>
@@ -251,7 +251,7 @@ function BeatmapDesigner (props) {
 function Playhead (props) {
     const color = props.color ? props.color : "black"
     return (
-        <div style={{color: color, position: "absolute", borderLeft: "1px solid", height: "500px", left:props.position}}></div>
+        <div style={{color: color, position: "absolute", borderLeft: "1px solid", height:"375px", left:props.position}}></div>
     )
 }
 
