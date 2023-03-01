@@ -1,35 +1,26 @@
 import React, { useEffect, useRef } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 
-// import { WaveformContainer, Wave, PlayButton } from './Waveform.styled';
-
 function Waveform (props) {  
     const {
         url,
+        isPlaying,
+        setPlaying,
         setSongTime,
         setSongLength,
         fullWidth,
     } = props;
     const waveform = useRef(null);
-    if (waveform.current)
-    {
-        waveform.current.minPxPerSec = fullWidth / waveform.current.getDuration();
-    }
+
+    useEffect(() => {
+        if (waveform.current && isPlaying !== waveform.current.isPlaying()) waveform.current.playPause();
+    }, [isPlaying]);
     
     useEffect(() => {
-        const interval = setInterval(() => setSongTime(Math.round(waveform.current.getCurrentTime() * 1000) / 1000), 1);
-
+        const interval = setInterval(() => setSongTime(waveform.current.getCurrentTime()), 1);
         return () => clearInterval(interval);
     }, [setSongTime]);
 
-    useEffect( () => {
-        const onSpacePress = (e) => {
-            if (e.code === "KeyP") {
-                waveform.current.playPause();
-            }
-        }
-        document.addEventListener("keydown", onSpacePress, false);
-    }, []);
 
     useEffect( () => {
         const setSongLengthAndSize = (length) => {
@@ -37,15 +28,9 @@ function Waveform (props) {
             waveform.current.minPxPerSec = fullWidth / length;
         }
     
-        var pxPerSec;
         if (waveform.current)
         {
-            pxPerSec = fullWidth / waveform.current.getDuration();
             waveform.current.destroy();
-        }
-        else
-        {
-            pxPerSec = 50;
         }
         
         waveform.current = WaveSurfer.create({
@@ -59,19 +44,16 @@ function Waveform (props) {
             waveColor: '#EFEFEF',
             cursorColor: 'transparent',
             fillParent: true,
-            minPxPerSec:pxPerSec,
         });
     
         waveform.current.load(url);
         waveform.current.on('ready', () => setSongLengthAndSize(waveform.current.getDuration()));
-    }, [url, waveform, setSongLength, fullWidth]);
-
+    }, [url, fullWidth, setSongLength]);
 
     return (
       <div style={ {display: "flex" } }>
-        <button onClick={ () => waveform.current.playPause() }/>
+        <button onClick={ () => { waveform.current.playPause(); setPlaying(waveform.current.isPlaying());} }/>
         <div id="waveform" style={ { width:fullWidth + "px", height: "90px"} }/>
-        <audio id="track" src={url} />
       </div>
     );
 };

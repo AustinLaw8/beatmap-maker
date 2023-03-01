@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import NotePlacer from './NotePlacer';
 import Waveform from './Waveform';
@@ -26,12 +26,78 @@ function BeatmapDesigner (props) {
     const [BPM, setBPM] = useState(0)
     const [songTime, setSongTime] = useState(0);
     const [songLength, setSongLength] = useState(0);
-    const [allNotes, setNotes] = useState([[],[],[],[],[],[],[]])
-    const [fullWidth, setWidth] = useState(0);
+    const [allNotes, setNotes] = useState([[],[],[],[],[],[],[]]);
+    const [fullWidth, setWidth] = useState(
+        Math.max(
+            document.body.scrollWidth,
+            document.documentElement.scrollWidth,
+            document.body.offsetWidth,
+            document.documentElement.offsetWidth,
+            document.body.clientWidth,
+            document.documentElement.clientWidth
+        )
+    );
     const [quantize, setQuantize] = useState(0);
+    const [undoStack, setUndoStack] = useState([]);
+    const [redoStack, setRedoStack] = useState([]);
+    const [isPlaying, setPlaying] = useState(false);
 
     const BPS = BPM / 60;
     const SPB = 1 / BPS;
+
+    const undo = () => {
+        if (undoStack.length === 0) return;
+        console.log('udno');
+        const undoCopy = JSON.parse(JSON.stringify(undoStack));
+        const redoCopy = JSON.parse(JSON.stringify(redoStack));
+
+        const currentState = JSON.parse(JSON.stringify(allNotes));
+        redoCopy.push(currentState);
+
+        const undoneState = undoCopy.pop()
+
+        setUndoStack(undoCopy)
+        setRedoStack(redoCopy)
+        setNotes(undoneState);
+    }
+
+    const redo = () => {
+
+        if (redoStack.length === 0) return;
+
+        const undoCopy = JSON.parse(JSON.stringify(undoStack));
+        const redoCopy = JSON.parse(JSON.stringify(redoStack));
+
+        const currentState = JSON.parse(JSON.stringify(allNotes));
+        undoStack.push(currentState);
+
+        const redoneState = redoCopy.pop()
+
+        setUndoStack(undoCopy)
+        setRedoStack(redoCopy)
+        setNotes(redoneState);
+    }
+
+    const onKeyDown = (e) => {
+        switch (e.keyCode)
+        {
+            case 32:
+                setPlaying(!isPlaying);
+                e.preventDefault();
+                break;
+            case 80:
+                setPlaying(!isPlaying);
+                break;
+            case 89:
+                if (e.ctrlKey || e.metaKey) redo();
+                break;
+            case 90:
+                if (e.ctrlKey || e.metaKey) undo();
+                break;
+            default:
+                break;
+        }
+    }
 
     const addNotes = (index, by, location) => {
         var target;
@@ -44,30 +110,32 @@ function BeatmapDesigner (props) {
             target = location;
         }
 
-        if (quantize !== 0)
+        if (quantize != 0 && BPM !== 0)
         {
             const targetInBeats = target * BPS;
             const quantizedTargetInBeats = Math.round(targetInBeats * quantize) / quantize;
             target = quantizedTargetInBeats * SPB;
-            console.log(target);
         }
-
-        const temp = [...allNotes];
+    
+        const copy = JSON.parse(JSON.stringify(allNotes));
+        const temp = JSON.parse(JSON.stringify(allNotes));
         temp[index].push(target)
+        setUndoStack([...undoStack, copy])
+        setRedoStack([])
         setNotes(temp);
     };
 
     const changeNotes = (index, location, next) => {
         location = getSongTime(location, songLength, fullWidth);
+        console.log("searchign for" + location + " to go to " + next)
         const temp = [...allNotes];
-        // lowkey i dont understand this code it does not work the way i think its supposed to but 
         switch (next) 
         {
             case 0: 
-                temp[index][temp[index].findIndex(e => e === location)] *= -1;
+                temp[index][temp[index].findIndex(e => e === -location)] *= -1;
                 break;
             case 1:
-                temp[index][temp[index].findIndex(e => e === -location)] *= -1;
+                temp[index][temp[index].findIndex(e => e === location)] *= -1;
                 break;
             default:
                 console.log("err probably occurred in changeNotes, BeatmapDesigner line 57");
@@ -96,31 +164,21 @@ function BeatmapDesigner (props) {
         link.parentNode.removeChild(link);
     }
 
-    // Full width, including the scroll part
-    if (fullWidth === 0) 
-    {
-        setWidth(Math.max(
-            document.body.scrollWidth,
-            document.documentElement.scrollWidth,
-            document.body.offsetWidth,
-            document.documentElement.offsetWidth,
-            document.body.clientWidth,
-            document.documentElement.clientWidth
-        ));
-    }
 
     const position = getSongPosition(songTime, songLength, fullWidth)
     const measureBars = BPM !== 0 ? new Array (Math.floor(BPS * songLength)).fill(0) : [];
-    console.log(allNotes)
     return (
-        <div>
+        <div style={{outlineStyle:"hidden"}}tabIndex={-1} onKeyDown={onKeyDown}>
+            <div style={{margin:"10px"}}>
+                click here to activate keyboard shortcuts because idk how to fix this bug
+            </div>
             <div style={ {width:fullWidth+"px"} }>
                 <div>
                     { measureBars.map( (_, i) => {
                         return <Playhead key={i} position={getSongPosition((i + 1) * SPB, songLength, fullWidth)} color={"silver"}/>
                     })}
                     <Playhead position={position}/>
-                    <Waveform url={props.url} time={songTime} setSongTime={setSongTime} setSongLength={setSongLength} fullWidth={fullWidth}/>
+                    <Waveform url={props.url} isPlaying={isPlaying} time={songTime} setPlaying={setPlaying} setSongTime={setSongTime} setSongLength={setSongLength} fullWidth={fullWidth}/>
                     { allNotes.map( (notes, i) => 
                     <NotePlacer key={i} index={i} notes={notes} addNotes={addNotes} songLength={songLength} fullWidth={fullWidth} changeNotes={changeNotes}/>
                     )}   
