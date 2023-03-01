@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import NotePlacer from './NotePlacer';
 import Waveform from './Waveform';
@@ -131,7 +131,7 @@ function BeatmapDesigner (props) {
             target = location;
         }
 
-        if (quantize != 0 && BPM !== 0)
+        if (Number(quantize) !== 0 && BPM !== 0)
         {
             const targetInBeats = target * BPS;
             const quantizedTargetInBeats = Math.round(targetInBeats * quantize) / quantize;
