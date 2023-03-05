@@ -8,6 +8,7 @@ function Note (props) {
         position,
         changeNotes,
         notePos,
+        setHoldNoteStart,
     } = props;
     const [type, setType] = useState(0);
 
@@ -23,8 +24,13 @@ function Note (props) {
 
     const color = type === 0 ? "#904d86" : "yellow";
 
+    const dragStart = (e) => {
+        console.log("drag start")
+        setHoldNoteStart([ index, e.pageX, e.pageY ]);
+    }
+
     return (
-        <button style={{backgroundColor:color, borderWidth:"1px", borderRadius:"2px", position: "absolute", top:"50%", height:"6px", left:position+"px"}} onClick={cycle}/>
+        <button draggable={true} onDragStart={dragStart} style={{backgroundColor:color, borderWidth:"1px", borderRadius:"2px", position: "absolute", top:"25%", height:"75%", left:position+"px"}} onClick={cycle}/>
     )
 }
 export default Note;

@@ -4,8 +4,8 @@ function README () {
             <div>
                 <h2> Currently not implemented </h2>
                 <ul>
-                    <li> Deleting notes </li>
-                    <li> Other note types in general (flick and hold) </li>
+                    <li> Deleting hold notes </li>
+                    <li> Undo/redo for hold notes </li>
                 </ul>
             </div>
             <div>

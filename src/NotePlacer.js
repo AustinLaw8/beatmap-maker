@@ -9,26 +9,48 @@ function NotePlacer(props) {
         index, 
         notes,
         addNotes,
-        changeNotes,
+        setHoldNote,
+        setHoldNoteStart,
         songLength,
         fullWidth,
     } = props;
 
-    const clickListener = (e) => {
+    const pointerListener = (e) => {
+        // console.log(e)
         const x = e.pageX;
-        if (x <= 16 || e.target.type === 'submit') return;
+        if (x <= 16)
+        {
+            console.log("click triggered out of bounds");
+            return;
+        }
+        if (e.target.type === 'submit') 
+        {
+            console.log("click triggered on note ")
+            setHoldNoteStart([index, e.pageX, e.pageY ]);
+            return;
+        }
         const location = getSongTime(x, songLength, fullWidth);
+        console.log("click triggered");
         addNotes(index, 'location', location);
     }
 
+    const dropListener = (e) => {
+        // console.log(e)
+        // console.log(getSongTime(x, songLength, fullWidth))
+        console.log("drop")
+        setHoldNote([index, e.pageX, e.pageY]);
+    }
+
+    // TODO: draggable notes
+    
     return (
-        <div onClick={clickListener} style={{position:"relative"}}>
+        <div onMouseDown={pointerListener} onDragOver={(e)=>e.preventDefault()} onDrop={dropListener} style={{position:"relative"}}>
             <hr/>
              <button onClick={ () => addNotes(index, 'index', -1) }/> {/* <img></button> */}
             { notes.map( (note, i) => {
                 const position = (getSongPosition(note, songLength, fullWidth, false) - BUTTON_WIDTH / 2);
                 return (
-                    <Note key={i} index={index} notePos={note} position={position} changeNotes={changeNotes}/>
+                    <Note key={i} position={position} {...props}/>
                 );
             })}
         </div> 

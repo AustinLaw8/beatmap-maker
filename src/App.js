@@ -10,6 +10,7 @@ export const BUTTON_WIDTH = 16;
 
 function App() {
     const [fileURL, setURL] = useState(null);
+    const [fileName, setName] = useState(null);
 
     const changeHandler = (event) => {
         const file = event?.target.files[0];
@@ -17,13 +18,14 @@ function App() {
         
         if (file !== null && file !== undefined)
         {
-            if (file.type === 'audio/wav')
+            if (file.type === 'audio/wav' || file.type === 'audio/mpeg')
             {
                 setURL(URL.createObjectURL(file));
+                setName(file.name.substring(0, file.name.length - 3));
             }
             else
             {
-                alert("Select a wav file pls");
+                alert("Select a wav/mp3 file pls");
             }
         }
         
@@ -34,7 +36,7 @@ function App() {
             <README />
             <input type="file" name="file" onChange={changeHandler} />
             {fileURL !== null ? (
-                <BeatmapDesigner url={fileURL}/>
+                <BeatmapDesigner fileName={fileName} url={fileURL}/>
             ) : <></> }
         </div>
     );
