@@ -57,21 +57,26 @@ function BeatmapDesigner (props) {
     const BPS = BPM / 60;
     const SPB = 1 / BPS;
 
-    
+    const approxEqual = useCallback( (a, b, epsilon) => {
+        if(epsilon === null || epsilon === undefined) epsilon = Math.abs(getSongTime(BUTTON_WIDTH / 2, songLength, fullWidth));
+        return Math.abs(b) - epsilon <= Math.abs(a) && Math.abs(a) <= Math.abs(b) + epsilon;
+    },[songLength, fullWidth]);
+
     const undo = () => {
         if (undoStack.length === 0) return;
 
         const undoCopy = cloneDeep(undoStack);
         const redoCopy = cloneDeep(redoStack);
 
-        const currentState = cloneDeep(allNotes);
+        const currentState = [cloneDeep(allNotes), cloneDeep(holdNotes)];
         redoCopy.push(currentState);
 
         const undoneState = undoCopy.pop();
 
         setUndoStack(undoCopy);
         setRedoStack(redoCopy);
-        setNotes(undoneState);
+        setNotes(undoneState[0]);
+        setHoldNotes(undoneState[1]);
         setSelected([0,0]);
     }
 
@@ -81,27 +86,45 @@ function BeatmapDesigner (props) {
         const undoCopy = cloneDeep(undoStack);
         const redoCopy = cloneDeep(redoStack);
 
-        const currentState = cloneDeep(allNotes);
+        const currentState = [cloneDeep(allNotes), cloneDeep(holdNotes)];
         undoCopy.push(currentState);
 
         const redoneState = redoCopy.pop();
 
         setUndoStack(undoCopy);
         setRedoStack(redoCopy);
-        setNotes(redoneState);
+        setNotes(redoneState[0]);
+        setHoldNotes(redoneState[1]);
         setSelected([0,0]);
     }
 
     const deleteLastNote = () => {
         if (!isEqual(selected, [0,0])) {
             const [ target, index ] = selected
-            const copy = cloneDeep(allNotes);
+            const copy = [cloneDeep(allNotes), cloneDeep(holdNotes)];
             const temp = cloneDeep(allNotes);
+            const holds = cloneDeep(holdNotes);
             temp[index].splice(temp[index].findIndex(e => e === target),1);
+            
+            const del = [];
+            holdNotes.forEach( ([start, end], i) => {
+                if ((index === start[0] && approxEqual(target, getSongTime(start[1], songLength, fullWidth))) ||
+                    (index === end[0] && approxEqual(target, getSongTime(end[1], songLength, fullWidth)))   
+                ) {
+                    del.push(i);
+                }
+            });
 
+            console.log(del);
+
+            del.reverse().forEach( (i) => {
+                holds.splice(i,1);
+            });
+            
             setUndoStack([...undoStack, copy]);
             setRedoStack([]);
             setNotes(temp);
+            setHoldNotes(holds);
             setSelected([0,0]);
         }
     }
@@ -155,7 +178,7 @@ function BeatmapDesigner (props) {
             target = quantizedTargetInBeats * SPB;
         }
     
-        const copy = cloneDeep(allNotes);
+        const copy = [cloneDeep(allNotes), cloneDeep(holdNotes)];
         const temp = cloneDeep(allNotes);
         temp[index].push(target);
         setUndoStack([...undoStack, copy]);
@@ -167,20 +190,29 @@ function BeatmapDesigner (props) {
     const changeNotes = (index, location, next) => {
         location = getSongTime(location, songLength, fullWidth);
         const temp = cloneDeep(allNotes);
+        var ind;
         switch (next) 
         {
             case 0: 
-                temp[index][temp[index].findIndex(e => e === -location)] *= -1;
+                ind = temp[index].findIndex(e => e === location)
+                if (ind !== -1)
+                    temp[index][ind] *= -1;
+                else
+                    console.log("err occurred");
                 break;
             case 1:
-                temp[index][temp[index].findIndex(e => e === location)] *= -1;
+                ind = temp[index].findIndex(e => e === -location)
+                if (ind !== -1)
+                    temp[index][ind] *= -1;
+                else
+                    console.log("err occurred");
                 break;
             default:
                 console.log("err probably occurred in changeNotes, BeatmapDesigner line 57");
                 break;
         }
 
-        const copy = cloneDeep(allNotes);
+        const copy = [cloneDeep(allNotes), cloneDeep(holdNotes)];
         setUndoStack([...undoStack, copy]);
         setRedoStack([]);
         setNotes(temp);
@@ -200,16 +232,19 @@ function BeatmapDesigner (props) {
         else
             temp.push([holdNoteStart, location])
         // console.log(temp)
+
+        setUndoStack([...undoStack, [cloneDeep(allNotes), temp]]);
+        setRedoStack([]);
         setHoldNotes(temp);
         setNotes(noteCopy);
+        setSelected([locationInTime, location[0]]);
     };
 
     const downloadMap = useCallback( () => {
         const removeAll = (index, arr, value) => {
             var i = 0;
-            const epsilon = Math.abs(getSongTime(BUTTON_WIDTH / 2, songLength, fullWidth));
             while (i < arr.length) {
-                if (index === value[0] && Math.abs(value[1]) - epsilon <= Math.abs(arr[i]) && Math.abs(arr[i]) <= Math.abs(value[1]) + epsilon) {
+                if (index === value[0] && approxEqual(arr[i], value[1])) {
                     arr.splice(i, 1);
                 } else {
                     i++;
@@ -236,8 +271,7 @@ function BeatmapDesigner (props) {
                 var last = res[j]?.length - 1
                 
                 // console.log(res)
-                while (j < res.length && !(res[j][last][0] === startInd && 
-                    (res[j][last][1] - epsilon <= startTime && startTime <= res[j][last][1] + epsilon)))
+                while (j < res.length && !(res[j][last][0] === startInd && approxEqual(startTime, res[j][last][i], epsilon)))
                     j++;
                 // console.log(j)
                 if (j !== res.length) {
@@ -301,7 +335,7 @@ function BeatmapDesigner (props) {
         document.body.appendChild(link);
         link.click();
         link.parentNode.removeChild(link);
-    }, [allNotes,fullWidth,holdNotes,songLength, props.fileName])
+    }, [allNotes,fullWidth,holdNotes,songLength, props.fileName, approxEqual])
 
     const position = getSongPosition(songTime, songLength, fullWidth);
     const measureBars = BPM !== 0 ? new Array (Math.floor(BPS * songLength)).fill(0) : [];
@@ -314,6 +348,7 @@ function BeatmapDesigner (props) {
         const ctx = canvasRef?.current?.getContext('2d');
         if (ctx)
         {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
             holdNotes.forEach( pair => {
                 const [first, second] = pair;
                 const x1 = first[1];
