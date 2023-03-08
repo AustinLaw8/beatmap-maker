@@ -51,6 +51,7 @@ function BeatmapDesigner (props) {
     const [selected, setSelected] = useState([0,0]);
     const [holdNoteStart, setHoldNoteStart] = useState([0,0,0,0]);
     const [holdNotes, setHoldNotes] = useState([]);
+    const [offset, setOffset] = useState(0);
 
     const canvasRef = useRef(null);
 
@@ -133,8 +134,10 @@ function BeatmapDesigner (props) {
         switch (e.keyCode)
         {
             case 8: // Backspace
-                deleteLastNote();
-                e.preventDefault();
+                if (e.target.className !== "editable") {
+                    deleteLastNote();
+                    e.preventDefault();
+                }
                 break;
             case 32: // Space
                 setPlaying(!isPlaying);
@@ -173,9 +176,10 @@ function BeatmapDesigner (props) {
 
         if (quantize && BPM)
         {
-            const targetInBeats = target * BPS;
+            const targetInBeats = target * BPS - Number(offset);
             const quantizedTargetInBeats = Math.round(targetInBeats * quantize) / quantize;
-            target = quantizedTargetInBeats * SPB;
+            target = Number(quantizedTargetInBeats * SPB) + Number(offset);
+            console.log(target)
         }
     
         const copy = [cloneDeep(allNotes), cloneDeep(holdNotes)];
@@ -344,6 +348,7 @@ function BeatmapDesigner (props) {
     // console.log(undoStack);
     // console.log(redoStack);
     // console.log(selected);
+    // console.log(offset);
     useEffect( () => {
         const ctx = canvasRef?.current?.getContext('2d');
         if (ctx)
@@ -377,7 +382,7 @@ function BeatmapDesigner (props) {
                     <canvas ref={canvasRef} height={"355px"} width={fullWidth+"px"}/>
                 </div>
                 { measureBars.map( (_, i) => {
-                    return <Playhead key={i} position={getSongPosition((i + 1) * SPB, songLength, fullWidth)} color={"silver"}/>
+                    return <Playhead key={i} position={getSongPosition(Number((i + 1) * SPB) + Number(offset), songLength, fullWidth)} color={"silver"}/>
                 })}
                 <Playhead position={position}/>
                 <Waveform url={props.url} isPlaying={isPlaying} time={songTime} setPlaying={setPlaying} setSongTime={setSongTime} setSongLength={setSongLength} fullWidth={fullWidth} setSelected={setSelected}/>
@@ -388,27 +393,39 @@ function BeatmapDesigner (props) {
             </div>
 
             <div style={{marginLeft:BUTTON_WIDTH+10+"px"}}>
-                <div>
-                    <label>Page Width:</label>
-                    <input type="number"onChange={(e) => setWidth(e.target.value) }/>
-                </div>
-                <div>
-                    <label>BPM:</label>
-                    <input type="number"onChange={(e) => setBPM(e.target.value)}/>
-                </div>
-                <div>
-                    <label> Time Quantize </label>
-                    <select onChange={(e) => setQuantize(e.target.value)}>
-                        <option value={0}>None</option>
-                        <option value={1}>Beat</option>
-                        <option value={2}>Half</option>
-                        <option value={4}>Quarter</option>
-                        <option value={8}>Eighth</option>
-                        <option value={16}>Sixteenth</option>
-                        <option value={32}>32nd</option>
-                        <option value={64}>64th</option>
-                    </select>
-                </div>
+                {/* <form> */}
+                    <div>
+                        <label>
+                            Page Width:
+                            <input defaultValue={fullWidth} className="editable" type="number" onChange={ (e) => setWidth(e.target.value) }/>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            BPM:
+                            <input name="bpm" className="editable" type="number" onChange={ (e) => setBPM(e.target.value) }/>
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            Offset:
+                            <input name="offset" className="editable" type="number" onChange={ (e) => setOffset(e.target.value) }/>
+                        </label>
+                    </div>
+                    <div>
+                        <label> Time Quantize </label>
+                        <select onChange={(e) => setQuantize(e.target.value)}>
+                            <option value={0}>None</option>
+                            <option value={1}>Beat</option>
+                            <option value={2}>Half</option>
+                            <option value={4}>Quarter</option>
+                            <option value={8}>Eighth</option>
+                            <option value={16}>Sixteenth</option>
+                            <option value={32}>32nd</option>
+                            <option value={64}>64th</option>
+                        </select>
+                    </div>
+                {/* </form> */}
                 <p> Song time in seconds: {songTime} / {songLength} </p> 
                 <p> Song time in beats: {Math.round(songTime * BPS * 1000) / 1000} </p> 
                 <button onClick={downloadMap}> Download Map </button>
