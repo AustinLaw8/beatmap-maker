@@ -116,8 +116,6 @@ function BeatmapDesigner (props) {
                 }
             });
 
-            console.log(del);
-
             del.reverse().forEach( (i) => {
                 holds.splice(i,1);
             });
@@ -179,7 +177,6 @@ function BeatmapDesigner (props) {
             const targetInBeats = target * BPS - Number(offset);
             const quantizedTargetInBeats = Math.round(targetInBeats * quantize) / quantize;
             target = Number(quantizedTargetInBeats * SPB) + Number(offset);
-            console.log(target)
         }
     
         const copy = [cloneDeep(allNotes), cloneDeep(holdNotes)];
@@ -227,9 +224,16 @@ function BeatmapDesigner (props) {
         const temp = cloneDeep(holdNotes);
         const noteCopy = cloneDeep(allNotes);
 
-        const locationInTime = getSongTime(location[1], songLength, fullWidth);
+        var target = getSongTime(location[1], songLength, fullWidth);
         
-        noteCopy[location[0]].push(locationInTime)
+        if (quantize && BPM)
+        {
+            const targetInBeats = target * BPS - Number(offset);
+            const quantizedTargetInBeats = Math.round(targetInBeats * quantize) / quantize;
+            target = Number(quantizedTargetInBeats * SPB) + Number(offset);
+        }
+
+        noteCopy[location[0]].push(target)
         // noteCopy[holdNoteStart[1]].splice(noteCopy[holdNoteStart[1]].findIndex(e => e === holdNoteStart[0]), 1);
         if (location[1] < holdNoteStart[1])
             temp.push([location, holdNoteStart])
@@ -241,7 +245,7 @@ function BeatmapDesigner (props) {
         setRedoStack([]);
         setHoldNotes(temp);
         setNotes(noteCopy);
-        setSelected([locationInTime, location[0]]);
+        setSelected([target, location[0]]);
     };
 
     const downloadMap = useCallback( () => {
@@ -274,9 +278,16 @@ function BeatmapDesigner (props) {
                 var j = 0;
                 var last = res[j]?.length - 1
                 
-                // console.log(res)
-                while (j < res.length && !(res[j][last][0] === startInd && approxEqual(startTime, res[j][last][i], epsilon)))
-                    j++;
+                while (j < res.length && 
+                        !(
+                            (res[j][last][0]) === startInd &&
+                            approxEqual(startTime, res[j][last][1], epsilon)
+                        ))
+                        {
+                            last = res[j].length - 1;
+                            // console.log(res[j])
+                            j++;
+                        }
                 // console.log(j)
                 if (j !== res.length) {
                     res[j].push(cloneDeep(end));
@@ -284,7 +295,6 @@ function BeatmapDesigner (props) {
                     res.push(cloneDeep(sorted[i]));
                 }
                 i++;
-                // console.log(res.toString())
             }
             return res;
         }
@@ -318,13 +328,15 @@ function BeatmapDesigner (props) {
             lane.sort( (a, b) => Math.abs(a) - Math.abs(b) ).join()
         ).join('\n') + '\n';
         
-        // console.log(holdNotes)
-        // console.log(holds)
+        console.log("below is the data that should have been downloaded")
+        console.log("data for tap/flicks")
+
+        console.log(data)
         const mergedHolds = merge(holds);
         const mergedHoldsData = mergedHolds.join('\n');
 
-        console.log(data)
-        console.log(mergedHolds)
+        console.log("data for holds")
+        console.log(mergedHoldsData)
         const url = window.URL.createObjectURL(
             new Blob([data, mergedHoldsData]),
         );
@@ -344,7 +356,10 @@ function BeatmapDesigner (props) {
     const position = getSongPosition(songTime, songLength, fullWidth);
     const measureBars = BPM !== 0 ? new Array (Math.floor(BPS * songLength)).fill(0) : [];
 
-    // console.log(allNotes);
+    console.log("Tap/flick notes")
+    console.log(allNotes);
+    console.log("Hold notes")
+    console.log(holdNotes);
     // console.log(undoStack);
     // console.log(redoStack);
     // console.log(selected);
@@ -414,7 +429,7 @@ function BeatmapDesigner (props) {
                     </div>
                     <div>
                         <label> Time Quantize </label>
-                        <select onChange={(e) => setQuantize(e.target.value)}>
+                        <select onChange={(e) => setQuantize(Number(e.target.value))}>
                             <option value={0}>None</option>
                             <option value={1}>Beat</option>
                             <option value={2}>Half</option>
