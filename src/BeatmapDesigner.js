@@ -52,6 +52,7 @@ function BeatmapDesigner (props) {
     const [holdNoteStart, setHoldNoteStart] = useState([0,0,0,0]);
     const [holdNotes, setHoldNotes] = useState([]);
     const [offset, setOffset] = useState(0);
+    const mainRef = useRef(null);
 
     const canvasRef = useRef(null);
 
@@ -352,6 +353,55 @@ function BeatmapDesigner (props) {
         link.click();
         link.parentNode.removeChild(link);
     }, [allNotes,fullWidth,holdNotes,songLength, props.fileName, approxEqual])
+    
+    const importMap = (event) => {
+        const yOffset = 130;
+        const laneHeight = 35;
+        const file = event?.target.files[0];
+        console.log(file);
+        const y = mainRef.current.offsetTop + yOffset;
+
+        if (file !== null && file !== undefined)
+        {
+            file.text().then( (text) => { 
+                const lines = text.split('\n');
+                console.log(lines)
+                const notes = [];
+                const holds = [];
+                for (let i = 0; i < 7; i++ ) {
+                    notes.push([]);
+                    const times = lines[i].split(',');
+                    times.forEach( time => notes[i].push(parseFloat(time)) );
+                }
+
+                for (let i = 7; i < lines.length; i++)
+                {
+                    const thisNote = lines[i].split(',');
+                    for (let j = 0; j < thisNote.length - 2; j+=2)
+                    {
+                        const lane1 = parseInt(thisNote[j]);
+                        const time1 = parseFloat(thisNote[j+1]);
+                        const x1 = parseInt(getSongPosition(time1, songLength, fullWidth, false));
+                        const y1 = y + lane1 * laneHeight;
+                        const lane2 = parseInt(thisNote[j+2]);
+                        const time2 = parseFloat(thisNote[j+3]);
+                        const y2 = y + lane2 * laneHeight;
+                        const x2 = parseInt(getSongPosition(time2, songLength, fullWidth, false));
+                        notes[lane1].push(time1);
+                        notes[lane2].push(time2);
+                        holds.push([
+                            [lane1,x1,y1],
+                            [lane2,x2,y2]
+                        ]);
+                    }
+                }
+                setNotes(notes);
+                setHoldNotes(holds);
+            });
+          }
+        setUndoStack([]);
+        setRedoStack([]);
+    }
 
     const position = getSongPosition(songTime, songLength, fullWidth);
     const measureBars = BPM !== 0 ? new Array (Math.floor(BPS * songLength)).fill(0) : [];
@@ -385,14 +435,28 @@ function BeatmapDesigner (props) {
                 ctx.stroke(); // Render the path
             });
         }
-    }, [holdNotes]);
+    }, [holdNotes, fullWidth]);
     
+    const changeWidth = (event) => {
+        const lastWidth = fullWidth;
+        const newWidth = parseInt(event.target.value);
+        const proportion = Math.round((newWidth - BUTTON_WIDTH)/(lastWidth - BUTTON_WIDTH));
+        console.log(lastWidth, newWidth, proportion);
+        const temp = holdNotes;
+        temp.forEach( pair => {
+            pair[0][1] *= proportion;
+            pair[1][1] *= proportion;
+        });
+        setHoldNotes(temp);
+        setWidth(newWidth);
+    }
+
     return (
         <div style={{outlineStyle:"hidden"}}tabIndex={-1} onKeyDown={onKeyDown}>
             <div style={{margin:"10px"}}>
                 click here to activate keyboard shortcuts because idk how to fix this bug
             </div>
-            <div style={ { width:fullWidth+"px"} }>
+            <div ref={mainRef} style={ { width:fullWidth+"px"} }>
                 <div style={{pointerEvents: 'none', height:"355px",width:"100%", position:'absolute'}}>
                     <canvas ref={canvasRef} height={"355px"} width={fullWidth+"px"}/>
                 </div>
@@ -412,7 +476,7 @@ function BeatmapDesigner (props) {
                     <div>
                         <label>
                             Page Width:
-                            <input defaultValue={fullWidth} className="editable" type="number" onChange={ (e) => setWidth(e.target.value) }/>
+                            <input defaultValue={fullWidth} className="editable" type="number" onChange={changeWidth}/>
                         </label>
                     </div>
                     <div>
@@ -443,7 +507,9 @@ function BeatmapDesigner (props) {
                 {/* </form> */}
                 <p> Song time in seconds: {songTime} / {songLength} </p> 
                 <p> Song time in beats: {Math.round(songTime * BPS * 1000) / 1000} </p> 
-                <button onClick={downloadMap}> Download Map </button>
+                <button onClick={downloadMap}> Download Map </button> <br/>
+                <label htmlFor="file"> Import Map: </label>
+                <input type="file" name="file" onChange={importMap} />
             </div>
         </div>
     );

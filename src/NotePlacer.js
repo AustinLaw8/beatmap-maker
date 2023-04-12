@@ -50,7 +50,7 @@ function NotePlacer(props) {
             { notes.map( (note, i) => {
                 const position = (getSongPosition(note, songLength, fullWidth, false) - BUTTON_WIDTH / 2);
                 return (
-                    <Note key={i} position={position} {...props}/>
+                    <Note key={i} position={position} notePos={note} {...props}/>
                 );
             })}
         </div> 

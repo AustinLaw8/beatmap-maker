@@ -10,19 +10,18 @@ function Note (props) {
         notePos,
         setHoldNoteStart,
     } = props;
-    const [type, setType] = useState(0);
-
+    const [type, setType] = useState(notePos > 0 ? 0 : 1);
+    
     useEffect(() => {
         setType(notePos > 0 ? 0 : 1);
     }, [notePos]);
-    
 
     const cycle = () => {
         changeNotes(index, position + BUTTON_WIDTH / 2, (type + 1) % 2);
         setType((type + 1) % 2);
     }
 
-    const color = type === 0 ? "#904d86" : "yellow";
+    const color = type === 0 ? "purple" : "yellow";
 
     const dragStart = (e) => {
         console.log("drag start")

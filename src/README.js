@@ -22,8 +22,8 @@ function README () {
                 'Ctrl + Y' to redo. <br />
                 'Backspace' to delete currently selected note (be careful, since there is no indication of the "currently selected" note. however, it is the last note you clicked or placed down"<br />
                 <h1> Legend </h1>
-                Gold: tap note <br />
-                Purple: Flick note <br />
+                Purple: Tap note <br />
+                Gold: Flick note <br />
             </div>
         </div>
     );
