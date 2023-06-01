@@ -18,7 +18,7 @@ function App() {
         
         if (file !== null && file !== undefined)
         {
-            if (file.type === 'audio/wav' || file.type === 'audio/mpeg')
+            if (file.type === 'audio/wav' || file.type === 'audio/x-wav' || file.type === 'audio/mpeg' || file.type.include('audio'))
             {
                 setURL(URL.createObjectURL(file));
                 setName(file.name.substring(0, file.name.length - 3));
