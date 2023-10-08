@@ -16,28 +16,21 @@ function NotePlacer(props) {
     } = props;
 
     const pointerListener = (e) => {
-        // console.log(e)
         const x = e.pageX;
         if (x <= 16)
         {
-            console.log("click triggered out of bounds");
             return;
         }
         if (e.target.type === 'submit') 
         {
-            console.log("click triggered on note ")
             setHoldNoteStart([index, e.pageX, e.pageY ]);
             return;
         }
         const location = getSongTime(x, songLength, fullWidth);
-        console.log("click triggered");
         addNotes(index, 'location', location);
     }
 
     const dropListener = (e) => {
-        // console.log(e)
-        // console.log(getSongTime(x, songLength, fullWidth))
-        console.log("drop")
         setHoldNote([index, e.pageX, e.pageY]);
     }
 

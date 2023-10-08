@@ -29,6 +29,19 @@ export function isEqual(a1, a2)
     return JSON.stringify(a1)===JSON.stringify(a2);
 }
 
+export const CANVAS_LANE_LENGTH = 20;
+export const Y_VALS = [125, 165, 205, 245, 285, 325, 365];
+export function normalizeY(val)
+{
+    for(var i = 0; i < Y_VALS.length; i++)
+    {
+        if (val < Y_VALS[i] + CANVAS_LANE_LENGTH) return Y_VALS[i];
+    }
+    return Y_VALS[Y_VALS.length - 1]
+}
+
+export const CANVAS_OFFSET = 675;
+
 function BeatmapDesigner (props) {
     const [BPM, setBPM] = useState(0)
     const [songTime, setSongTime] = useState(0);
@@ -196,21 +209,21 @@ function BeatmapDesigner (props) {
         switch (next) 
         {
             case 0: 
-                ind = temp[index].findIndex(e => e === location)
-                if (ind !== -1)
-                    temp[index][ind] *= -1;
-                else
-                    console.log("err occurred");
-                break;
-            case 1:
                 ind = temp[index].findIndex(e => e === -location)
                 if (ind !== -1)
                     temp[index][ind] *= -1;
                 else
-                    console.log("err occurred");
+                    console.log("err occurred, couldn't find the note");
+                break;
+            case 1:
+                ind = temp[index].findIndex(e => e === location)
+                if (ind !== -1)
+                    temp[index][ind] *= -1;
+                else
+                    console.log("err occurred, couldn't find the note");
                 break;
             default:
-                console.log("err probably occurred in changeNotes, BeatmapDesigner line 57");
+                console.log("err probably occurred in changeNotes");
                 break;
         }
 
@@ -240,7 +253,6 @@ function BeatmapDesigner (props) {
             temp.push([location, holdNoteStart])
         else
             temp.push([holdNoteStart, location])
-        // console.log(temp)
 
         setUndoStack([...undoStack, [cloneDeep(allNotes), temp]]);
         setRedoStack([]);
@@ -264,16 +276,10 @@ function BeatmapDesigner (props) {
         const merge = (arr) => {
             const sorted = cloneDeep(arr);
             sorted.sort((a,b)=>a[0][1] - b[0][1]);
-            // console.log(sorted[0])
             const res = [];
             const epsilon = Math.abs(getSongTime(BUTTON_WIDTH / 4, songLength, fullWidth));
-            // console.log(sorted)
-            // console.log(res)
-            // console.log(epsilon)
             var i = 0;
             while (i < sorted.length) {
-                // console.log(i)
-                // console.log(sorted[i])
                 var [start, end] = sorted[i];
                 var [startInd, startTime] = start;
                 var j = 0;
@@ -286,10 +292,8 @@ function BeatmapDesigner (props) {
                         ))
                         {
                             last = res[j].length - 1;
-                            // console.log(res[j])
                             j++;
                         }
-                // console.log(j)
                 if (j !== res.length) {
                     res[j].push(cloneDeep(end));
                 } else {
@@ -304,9 +308,6 @@ function BeatmapDesigner (props) {
         const holds = holdNotes.map( ([start, end], i) => {
             const startCopy = cloneDeep(start);
             const endCopy = cloneDeep(end);
-            // console.log(start)
-            // console.log(end)
-            // console.log(temp)
             return [
                 [startCopy[0], getSongTime(startCopy[1],songLength,fullWidth)],
                 [endCopy[0], getSongTime(endCopy[1],songLength,fullWidth)],
@@ -346,7 +347,7 @@ function BeatmapDesigner (props) {
         link.href = url;
         link.setAttribute(
             'download',
-            `${props.fileName}map`,
+            `${props.fileName}txt`,
         );
         
         document.body.appendChild(link);
@@ -358,14 +359,12 @@ function BeatmapDesigner (props) {
         const yOffset = 130;
         const laneHeight = 35;
         const file = event?.target.files[0];
-        console.log(file);
         const y = mainRef.current.offsetTop + yOffset;
 
         if (file !== null && file !== undefined)
         {
             file.text().then( (text) => { 
                 const lines = text.split('\n');
-                console.log(lines)
                 const notes = [];
                 const holds = [];
                 for (let i = 0; i < 7; i++ ) {
@@ -410,10 +409,6 @@ function BeatmapDesigner (props) {
     console.log(allNotes);
     console.log("Hold notes")
     console.log(holdNotes);
-    // console.log(undoStack);
-    // console.log(redoStack);
-    // console.log(selected);
-    // console.log(offset);
     useEffect( () => {
         const ctx = canvasRef?.current?.getContext('2d');
         if (ctx)
@@ -421,18 +416,17 @@ function BeatmapDesigner (props) {
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
             holdNotes.forEach( pair => {
                 const [first, second] = pair;
+                
                 const x1 = first[1];
-                const y1 = first[2] - 650;
+                const y1 = normalizeY(first[2] - CANVAS_OFFSET);
 
                 const x2 = second[1];
-                const y2 = second[2] - 650;
+                const y2 = normalizeY(second[2] - CANVAS_OFFSET);
 
-                // console.log(x1 + " " + y1)
-                // console.log(x2 + " " + y2)
-                ctx.beginPath(); // Start a new path
-                ctx.moveTo(x1, y1); // Move the pen to (30, 50)
-                ctx.lineTo(x2, y2); // Draw a line to (150, 100)
-                ctx.stroke(); // Render the path
+                ctx.beginPath(); 
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
             });
         }
     }, [holdNotes, fullWidth]);
@@ -441,7 +435,6 @@ function BeatmapDesigner (props) {
         const lastWidth = fullWidth;
         const newWidth = parseInt(event.target.value);
         const proportion = Math.round((newWidth - BUTTON_WIDTH)/(lastWidth - BUTTON_WIDTH));
-        console.log(lastWidth, newWidth, proportion);
         const temp = holdNotes;
         temp.forEach( pair => {
             pair[0][1] *= proportion;

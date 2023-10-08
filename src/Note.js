@@ -24,7 +24,6 @@ function Note (props) {
     const color = type === 0 ? "purple" : "yellow";
 
     const dragStart = (e) => {
-        console.log("drag start")
         setHoldNoteStart([ index, e.pageX, e.pageY ]);
     }
 
